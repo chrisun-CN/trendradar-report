@@ -22,11 +22,14 @@ jobs:
       - name: Download report
         run: |
           curl -sL https://raw.githubusercontent.com/sansan0/TrendRadar/main/index.html -o index.html
+          ls -la index.html
           
       - name: Commit
         run: |
           git config --local user.email "bot@github.com"
           git config --local user.name "bot"
+          git status
           git add index.html -f
-          git commit -m "Update $(date +%Y-%m-%d\ %H:%M)" || exit 0
-          git push origin main
+          git diff --cached --stat
+          git commit -m "Update $(date +%Y-%m-%d\ %H:%M)" || echo "No changes"
+          git push origin main || echo "Push failed"

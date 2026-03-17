@@ -27,29 +27,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          
-      - name: Install dependencies
+      - name: Download latest report
         run: |
-          pip install pyyaml requests beautifulsoup4 aiohttp jinja2 lxml
+          # 从原版 TrendRadar 仓库下载最新生成的报告
+          REPORT_URL="https://raw.githubusercontent.com/sansan0/TrendRadar/main/index.html"
+          wget -q -O index.html $REPORT_URL || curl -s -o index.html $REPORT_URL
           
-      - name: Run TrendRadar
-        run: |
-          cd /tmp
-          git clone --depth 1 https://github.com/sansan0/TrendRadar.git
-          cd TrendRadar
-          pip install -r requirements.txt 2>/dev/null || pip install pyyaml requests beautifulsoup4 aiohttp jinja2 lxml
-          python main.py
+          # 下载 output 目录
+          mkdir -p output
+          wget -q -O output/hot.json https://raw.githubusercontent.com/sansan0/TrendRadar/main/output/hot.json || true
           ls -la
-          
-      - name: Copy report
-        run: |
-          cp /tmp/TrendRadar/index.html $GITHUB_WORKSPACE/ || echo "No index.html"
-          cp -r /tmp/TrendRadar/output $GITHUB_WORKSPACE/ 2>/dev/null || echo "No output dir"
-          ls -la $GITHUB_WORKSPACE/
           
       - name: Commit and push report
         if: success()

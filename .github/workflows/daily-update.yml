@@ -25,7 +25,8 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-        
+          persist-credentials: false
+          
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -37,18 +38,26 @@ jobs:
           
       - name: Run TrendRadar
         run: |
-          git clone https://github.com/sansan0/TrendRadar.git ../TrendRadar
-          cd ../TrendRadar
+          cd /tmp
+          git clone --depth 1 https://github.com/sansan0/TrendRadar.git
+          cd TrendRadar
+          pip install -r requirements.txt 2>/dev/null || pip install pyyaml requests beautifulsoup4 aiohttp jinja2 lxml
           python main.py
-          cp index.html $GITHUB_WORKSPACE/
-          cp -r output $GITHUB_WORKSPACE/ 2>/dev/null || true
+          ls -la
+          
+      - name: Copy report
+        run: |
+          cp /tmp/TrendRadar/index.html $GITHUB_WORKSPACE/ || echo "No index.html"
+          cp -r /tmp/TrendRadar/output $GITHUB_WORKSPACE/ 2>/dev/null || echo "No output dir"
+          ls -la $GITHUB_WORKSPACE/
           
       - name: Commit and push report
+        if: success()
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add index.html output/ -f
-          git commit -m "Update report $(date +%Y-%m-%d\ %H:%M)" || exit 0
+          git commit -m "Update report $(date +%Y-%m-%d\ %H:%M)" || true
           git push origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

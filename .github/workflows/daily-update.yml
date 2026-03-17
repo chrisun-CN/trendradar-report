@@ -1,0 +1,43 @@
+name: Daily Report Update
+
+on:
+  schedule:
+    # 每天 8:00, 12:00, 18:00 北京时间自动运行
+    - cron: "0 0 * * *"     # UTC 0:00 = 北京时间 8:00
+    - cron: "0 4 * * *"     # UTC 4:00 = 北京时间 12:00
+    - cron: "0 10 * * *"   # UTC 10:00 = 北京时间 18:00
+  workflow_dispatch:
+
+jobs:
+  update-report:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          
+      - name: Install dependencies
+        run: |
+          pip install pyyaml requests beautifulsoup4 aiohttp jinja2 lxml
+          
+      - name: Run TrendRadar
+        run: |
+          # 这里需要 Clone TrendRadar 项目来运行
+          git clone https://github.com/sansan0/TrendRadar.git ../TrendRadar
+          cd ../TrendRadar
+          python main.py
+          cp index.html $GITHUB_WORKSPACE/
+          cp -r output $GITHUB_WORKSPACE/
+          
+      - name: Commit and push report
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add index.html output/ -f
+          git commit -m "Update report $(date +%Y-%m-%d\ %H:%M)" || exit 0
+          git push

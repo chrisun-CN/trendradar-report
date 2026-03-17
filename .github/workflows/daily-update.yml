@@ -2,49 +2,31 @@ name: Daily Report Update
 
 on:
   schedule:
-    # 每天 8:00, 12:00, 18:00 北京时间自动运行
-    - cron: "0 0 * * *"     # UTC 0:00 = 北京时间 8:00
-    - cron: "0 4 * * *"     # UTC 4:00 = 北京时间 12:00
-    - cron: "0 10 * * *"   # UTC 10:00 = 北京时间 18:00
+    - cron: "0 0 * * *"
+    - cron: "0 4 * * *"
+    - cron: "0 10 * * *"
   workflow_dispatch:
   push:
     branches:
       - main
 
 jobs:
-  update-report:
+  update:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
-    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
-          persist-credentials: false
           
-      - name: Download latest report
+      - name: Download report
         run: |
-          # 从原版 TrendRadar 仓库下载最新生成的报告
-          REPORT_URL="https://raw.githubusercontent.com/sansan0/TrendRadar/main/index.html"
-          wget -q -O index.html $REPORT_URL || curl -s -o index.html $REPORT_URL
+          curl -sL https://raw.githubusercontent.com/sansan0/TrendRadar/main/index.html -o index.html
           
-          # 下载 output 目录
-          mkdir -p output
-          wget -q -O output/hot.json https://raw.githubusercontent.com/sansan0/TrendRadar/main/output/hot.json || true
-          ls -la
-          
-      - name: Commit and push report
-        if: success()
+      - name: Commit
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add index.html output/ -f
-          git commit -m "Update report $(date +%Y-%m-%d\ %H:%M)" || true
+          git config --local user.email "bot@github.com"
+          git config --local user.name "bot"
+          git add index.html -f
+          git commit -m "Update $(date +%Y-%m-%d\ %H:%M)" || exit 0
           git push origin main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,35 @@
+name: Daily Report Update
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+    - cron: "0 4 * * *"
+    - cron: "0 10 * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          
+      - name: Download report
+        run: |
+          curl -sL https://raw.githubusercontent.com/sansan0/TrendRadar/main/index.html -o index.html
+          ls -la index.html
+          
+      - name: Commit
+        run: |
+          git config --local user.email "bot@github.com"
+          git config --local user.name "bot"
+          git status
+          git add index.html -f
+          git diff --cached --stat
+          git commit -m "Update $(date +%Y-%m-%d\ %H:%M)" || echo "No changes"
+          git push origin main || echo "Push failed"
